@@ -1,0 +1,9 @@
+﻿## Interface: 50100
+## Title: tdCooldownCount
+## Note: Show count on cooldown
+## Author: ldz5
+## Version: 50100.01
+## Dependencies: tdCore
+## SavedVariables: TDDB_TDCOOLDOWNCOUNT
+
+load.xml
