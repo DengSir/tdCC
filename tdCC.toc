@@ -2,7 +2,7 @@
 ## Title: tdCooldownCount
 ## Note: Show count on cooldown
 ## Author: ldz5
-## Version: 50100.01
+## Version: 50100.02
 ## Dependencies: tdCore
 ## SavedVariables: TDDB_TDCOOLDOWNCOUNT
 
