@@ -66,7 +66,7 @@ function tdCC:OnInit()
             },
             {
                 type = 'Slider', label = L['Minimum size to display text'], depend = 'ActionDefaultEnable',
-                minValue = 0, maxValue = 3, valueStep = 0.1,
+                minValue = 0, maxValue = 1.5, valueStep = 0.05,
                 profile = {self:GetName(), 'class', class, 'minRatio'},
             },
         }
