@@ -149,7 +149,7 @@ function tdCC:OnInit()
     local gui = {
         type = 'TabWidget',
         {
-            type = 'TabWidget', label = 'Action',
+            type = 'TabWidget', label = L['Action Bar'],
             getGeneral('Action'),
             getStyle('Action'),
             {
@@ -157,6 +157,16 @@ function tdCC:OnInit()
                 {
                     type = 'CheckBox', label = ENABLE, name = 'ActionShineEnable',
                     profile = {self:GetName(), 'class', 'Action', 'shine'}
+                },
+                {
+                    type = 'ComboBox', label = L['Shine class'], depend = 'ActionShineEnable',
+                    profile = {self:GetName(), 'class', 'Action', 'shineClass'},
+                    itemList = {
+                        {text = L['Icon'], value = 'Icon'},
+                        {text = L['Blizzard'], value = 'Blizzard'},
+                        {text = L['Round'], value = 'Round'},
+                        {text = L['Explosive'], value = 'Explosive'},
+                    },
                 },
                 {
                     type = 'Slider', label = L['Minimum duration to display shine'], depend = 'ActionShineEnable',

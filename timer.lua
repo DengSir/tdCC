@@ -9,7 +9,7 @@ local round = function(x) return floor(x + 0.5) end
 local tdCC = tdCore(...)
 
 local Style = tdCC:NewModule('Style')
-local Shine = tdCC:NewModule('Shine', CreateFrame('Frame'))
+local Shine = tdCC:NewModule('Shine', CreateFrame('Frame'), 'Update')
 local Timer = tdCC:NewModule('Timer', CreateFrame('Frame'), 'Update', 'Event')
 
 ----- style
@@ -134,7 +134,6 @@ end
 ----- timer
 
 local timers = {}
-local actives = {}
 
 local function cooldownGetSize(self)
     local width, height = self:GetSize()
@@ -283,13 +282,11 @@ function Timer:Start(start, duration)
     self.start = start
     self.duration = duration
     
-    self:Show()
-    actives[self] = true
+    self:StartUpdate(0)
 end
 
 function Timer:Stop()
     self.nextUpdate = DONOT_UPDATE
-    actives[self] = nil
     
     if self.fontReady then
         self.text:SetText('')
@@ -299,6 +296,7 @@ function Timer:Stop()
     self.duration = nil
     self.fontReady = nil
     
+    self:StopUpdate()
     self:Hide()
     self.cooldown:SetAlpha(1)
 end
@@ -340,13 +338,9 @@ function Timer:GetSetting()
 end
 
 function Timer:OnUpdate(elapsed)
-    if next(actives) then
-        for timer in pairs(actives) do
-            timer.nextUpdate = timer.nextUpdate - elapsed
-            if timer.nextUpdate < 0 then
-                timer:Update()
-            end
-        end
+    self.nextUpdate = self.nextUpdate - elapsed
+    if self.nextUpdate < 0 then
+        self:Update()
     end
 end
 
@@ -398,14 +392,15 @@ function Timer:OnInit()
     
     self:SetHandle('OnProfileUpdate', self.OnProfileUpdate)
     self:RegisterEvent('ACTIONBAR_UPDATE_COOLDOWN')
-    self:StartUpdate()
 end
 
 ---- Shine
 
 
-local shines = {}
-local shineCount = 0
+local shines = setmetatable({}, {__index = function(o, timer)
+    o[timer] = Shine:New(timer)
+    return o[timer]
+end})
 
 local function animOnFinished(self)
     local parent = self:GetParent()
@@ -436,44 +431,36 @@ function Shine:New(timer)
     grow:SetScript('OnFinished', scaleOnFinished)
     
     local icon = shine:CreateTexture(nil, 'OVERLAY')
-	icon:SetBlendMode('ADD')
+    icon:SetBlendMode('ADD')
     icon:SetAllPoints(shine)
     
     shine.grow = grow
     shine.anim = anim
-	shine.icon = icon
+    shine.icon = icon
     shine.timer = timer
-    
-    shines[timer] = shine
     
     return shine
 end
 
 function Shine:OnHide()
-	if self.anim:IsPlaying() then
-		self.anim:Stop()
-	end
+    if self.anim:IsPlaying() then
+        self.anim:Stop()
+    end
     
-	self:Hide()
-    shineCount = shineCount - 1
-end
-
-function Shine:GetShine(timer)
-    return shines[timer] or self:New(timer)
+    self:Hide()
 end
 
 function Shine:Start()
     if self.anim:IsPlaying() then
         self.anim:Stop()
-        shineCount = shineCount - 1
     end
     
     local width, height = self.timer:GetSize()
     
-	local icon = self.icon
-	local r, g, b = icon:GetVertexColor()
-	icon:SetVertexColor(r, g, b, self:getShineAlpha())
-	icon:SetTexture(self:GetIcon())
+    local icon = self.icon
+    local r, g, b = icon:GetVertexColor()
+    icon:SetVertexColor(r, g, b, self:getShineAlpha())
+    icon:SetTexture(self:GetIcon())
     
     local scale = self:getShineScale()
     self:SetSize(width * scale, height * scale)
@@ -481,33 +468,40 @@ function Shine:Start()
     self.grow:SetScale(1 / scale, 1 / scale)
     self.grow:SetDuration(self:getShineDuration())
     
-    shineCount = shineCount + 1
-
-	self:Show()
-	self.anim:Play()
+    self:Show()
+    self.anim:Play()
 end
 
 function Shine:StartShine(timer)
-    if shineCount > 10 then return end
     if not timer.set.shine or timer.set.shineMinDuration >= timer.duration then return end
     
-    self:GetShine(timer):Start()
+    shines[timer]:Start()
 end
 
+local ICONS = {
+    Round = [[Interface\Cooldown\ping4]],
+    Blizzard = [[Interface\Cooldown\star4]],
+    Explosive = [[Interface\Cooldown\starburst]],
+}
+
 function Shine:GetIcon()
+    local icon = ICONS[self:getShineClass()]
+    if icon then
+        return icon
+    end
     local frame = self:GetParent()
     if frame then
-        local icon = frame.icon
-        if icon and icon.GetTexture then
-            return icon:GetTexture()
+        local texture = self.texture
+        if texture then
+            return texture:GetTexture()
         end
 
         local name = frame:GetName()
         if name then
-            local icon = _G[name .. 'Icon'] or _G[name .. 'IconTexture']
-            if icon and icon.GetTexture then
-                frame.icon = icon
-                return icon:GetTexture()
+            local texture = _G[name .. 'Icon'] or _G[name .. 'IconTexture']
+            if texture then
+                self.texture = texture
+                return texture:GetTexture()
             end
         end
     end
